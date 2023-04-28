@@ -1,5 +1,4 @@
 const ethers = require('ethers');
-const ERC20 = new ethers.utils.Interface(require('./erc20.abi.json'));
 const providers = {
     eth: ethers.getDefaultProvider(),
     bsc: new ethers.providers.JsonRpcProvider('https://bsc-dataseed.binance.org')
@@ -34,37 +33,23 @@ const providers = {
         process.exit(1);
     }
 
-    // PROCESS TRANSACTION LOGS
+    // DEFINE QANX ADDRESS AND LOCK TOPIC
+    QANX_ADDR = '0xAAA9214F675316182Eaa21C85f0Ca99160CC3AAA';
+    QANX_LOCK_APPLIED_TOPIC = '0x74e0938598868b4c1e871f3cff0292e8399ee8cc53264926f8956ef711f7bc37';
+
+    // CHECK LOGS OF RECEIPT
     receipt.logs.map(log => {
 
-        // IF THIS IS A TRANSFER EVENT TOPIC
-        if(log.topics[0] === ERC20.getEventTopic('Transfer')){
+        // IF A LOG WAS EMITTED BY THE QANX CONTRACT, AND THE EVENT TOPIC IS "LockApplied"
+        if(log.address === QANX_ADDR && log.topics[0] === QANX_LOCK_APPLIED_TOPIC){
 
-            // EXTRACT SENDER AND BENEFICIARY FROM TOPICS
-            const [ , sender, beneficiary ] = log.topics;
-
-            // IF SENDER AND BENEFICIARY ARE THE SAME, IGNORE TRANSACTION AS IT IS ZERO SUM ANYWAY
-            if(sender === beneficiary){
-                console.log(`${sender} is sending money to himself, DO NOT make deposit!`);
-                process.exit(1);
-            }
-            
-            // OPTION 1: IGNORE TRANSACTION IF NOT INITIATED FROM AN ERC20 STANDARD FUNCTION
-            const func = tx.data?.slice(0, 10);
-            if(func !== ERC20.getSighash('transfer(address, uint)') && func !== ERC20.getSighash('transferFrom(address, address, uint)')){
-                console.log(`${func} is not an ERC20 standard transfer function, we should ignore transaction!`);
-                process.exit(1);
-            }
-
-            // OPTION 2: EXPLICITLY BLOCK THE FUNCTION SELECTOR OF transferLocked() METHOD OF QANX
-            if(func === '0xb80e74d7'){
-                console.log(`This transaction is a locked QANX token transfer, we should ignore transaction!`);
-                process.exit(1);
-            }
-
-            // IF THEY DIFFER, THIS COULD BE A VALID DEPOSIT TRANSACTION
-            console.log(`${sender} is sending money to ${beneficiary} using function ${func}, this could be a valid deposit!`);
-            process.exit(0);
+            // THEN THIS TRANSACTION CERTAINLY ORIGINATED FROM A LOCKED TRANSFER METHOD
+            console.log(`${txhash} transfers locked QANX tokens, we should ignore it!`);
+            process.exit(1);
         }
     });
+    
+    // REACHING THIS POINT MEANS THAT THIS IS A NON-LOCKED TRANSFER
+    console.log(`${txhash} does not involve locked QANX tokens.`);
+    process.exit(0);
 })();
