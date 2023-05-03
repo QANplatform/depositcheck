@@ -15,7 +15,8 @@ const providers = {
     // VALIDATE INPUT PARAMS
     if(!provider || !/^0x([A-Fa-f0-9]{64})$/.test(txhash)){
         console.log('Usage:   docker run --rm qanplatform/depositcheck [eth|bsc] $TXHASH');
-        console.log('Example: docker run --rm qanplatform/depositcheck eth 0xe58b406073dbccd09de43c278ec7d6f40eaba86d60c68c8c79ff784bc34ef9dc');
+        console.log('Example (normal transfer): docker run --rm qanplatform/depositcheck eth 0x9dd3bd166f7c56a097e32576d59d35be83c9914bbca67f56a17dbe77d1024d62');
+        console.log('Example (locked transfer): docker run --rm qanplatform/depositcheck eth 0x3722aa757f34593ed45f0be96eb8f44166e279b640121b682b49f50c4e6e06fc');
         process.exit(1);
     }
 
